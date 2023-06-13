@@ -49,20 +49,6 @@ pipeline {
                 }
 
                 stages {
-                    stage('Prepare: Install go') {
-                        agent {
-                            docker {
-                                label 'docker'
-                                reuseNode true
-                                image "${sleImage}:${sleVersion}"
-                            }
-                        }
-                        steps {
-                            sh "make install_go"
-                        }
-                    }
-
-
                     stage('Prepare: RPMs') {
                         agent {
                             docker {
