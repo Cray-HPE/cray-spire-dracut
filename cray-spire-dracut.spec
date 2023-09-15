@@ -10,6 +10,7 @@ License: MIT
 Summary: Cray Spire Dracut Module
 
 Requires: spire-agent
+Requires: tpm-provisioner-client
 Requires: coreutils
 Requires: dracut
 Requires: iputils
