@@ -1,7 +1,7 @@
 #!/bin/bash
 spire_rootdir="/var/lib/spire"
 
-wait-for-spire() {
+waitforspire() {
   RETRY=0
   MAX_RETRIES=30
   RETRY_SECONDS=5
@@ -64,7 +64,7 @@ if [[ -n $join_token ]]; then
   /usr/bin/spire-agent run -expandEnv \
     -config ${spire_rootdir}/conf/spire-agent.conf &
 
-  wait-for-spire
+  waitfo-spire
   if spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock; then
     if [[ $(< $flag) != pass ]]; then
       info "Spire-agent healthcheck passed"
