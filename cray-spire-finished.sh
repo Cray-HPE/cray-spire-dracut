@@ -64,7 +64,7 @@ if [[ -n $join_token ]]; then
   /usr/bin/spire-agent run -expandEnv \
     -config ${spire_rootdir}/conf/spire-agent.conf &
 
-  waitfo-spire
+  waitforspire
   if spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock; then
     if [[ $(< $flag) != pass ]]; then
       info "Spire-agent healthcheck passed"
