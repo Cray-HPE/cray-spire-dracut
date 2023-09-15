@@ -1,7 +1,7 @@
 Name: cray-spire-dracut
 Vendor: Hewlett Packard Enterprise Company
 Version: %(echo $VERSION | sed 's/^v//')
-Release: 1
+Release: 2
 Source: %{name}-%{version}.tar.bz2
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
