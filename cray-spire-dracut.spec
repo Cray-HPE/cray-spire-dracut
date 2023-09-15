@@ -1,7 +1,7 @@
 Name: cray-spire-dracut
 Vendor: Hewlett Packard Enterprise Company
 Version: %(echo $VERSION | sed 's/^v//')
-Release: %(echo $BUILD)
+Release: 1
 Source: %{name}-%{version}.tar.bz2
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
@@ -10,6 +10,7 @@ License: MIT
 Summary: Cray Spire Dracut Module
 
 Requires: spire-agent
+Requires: tpm-provisioner-client
 Requires: coreutils
 Requires: dracut
 Requires: iputils
