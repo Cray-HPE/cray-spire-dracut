@@ -161,14 +161,15 @@ EOF
 
   waitforspire
   if spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock; then
-  if [[ $r -ne 0 ]]; then
-    if [[ $(< $flag) != pass ]]; then
-      info "Spire-agent healthcheck passed"
-      echo pass > $flag
+    if [[ $r -ne 0 ]]; then
+      if [[ $(< $flag) != pass ]]; then
+        info "Spire-agent healthcheck passed"
+        echo pass > $flag
+      fi
+    else
+      warn "Spire-agent healthcheck failed, return code $r"
+      echo fail > $flag
     fi
-  else
-    warn "Spire-agent healthcheck failed, return code $r"
-    echo fail > $flag
   fi
 fi
 
