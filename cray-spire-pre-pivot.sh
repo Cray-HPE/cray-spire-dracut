@@ -9,6 +9,8 @@ info "newroot=${NEWROOT}"
 # using the current data files.
 killall spire-agent
 cp -rp ${spire_rootdir} "${NEWROOT}${home_dir}"
-cp -rp /var/lib/tpm-provisioner/* "${NEWROOT}/var/lib/tpm-provisioner/"
+if [[ -f /var/lib/tpm-provisioner/devid.crt.pem || -f /var/lib/tpm-provisioner/devid.priv.blob || -f /var/lib/tpm-provisioner/devid.pub.blob ]]; then
+  cp -rp /var/lib/tpm-provisioner/* "${NEWROOT}/var/lib/tpm-provisioner/"
+fi
 
 info "End cray-spire-pre-pivot"

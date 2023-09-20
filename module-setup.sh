@@ -23,7 +23,6 @@ install() {
   inst ${spire_rootdir}/bundle
   inst ${spire_rootdir}/conf
   inst ${spire_rootdir}/data
-  inst /var/lib/tpm-provisioner
   inst /etc/tpm-provisioner/blobs.conf
   inst /etc/tpm-provisioner/client.conf
   inst /opt/cray/cray-spire/tpm-provisioner-client

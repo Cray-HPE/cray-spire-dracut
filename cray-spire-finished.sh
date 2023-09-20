@@ -102,7 +102,7 @@ fi
 
 if [ "$tpm" = "enroll" ]; then
   info "Enrolling TPM on Spire"
-  /usr/bin/tpm-provisioner
+  /opt/cray/cray-spire/tpm-provisioner-client
   /usr/bin/tpm-blob-clear
   /usr/bin/tpm-blob-store
 
