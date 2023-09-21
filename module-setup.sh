@@ -14,9 +14,7 @@ depends() {
 
 # called by dracut
 install() {
-  inst_hook cmdline 19 "$moddir/parse-crayspire-mdserver.sh"
   inst_hook cmdline 20 "$moddir/parse-crayspire.sh"
-  inst_hook initqueue/finished 20 "$moddir/cray-spire-mdserver-finished.sh"
   inst_hook initqueue/finished 21 "$moddir/cray-spire-finished.sh"
   inst_hook emergency 20 "$moddir/cray-dump-spire-log.sh"
   inst_hook pre-pivot 20 "$moddir/cray-spire-pre-pivot.sh"

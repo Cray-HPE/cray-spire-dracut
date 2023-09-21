@@ -1,5 +1,19 @@
 #!/bin/bash
+# Set the rootdir used for all spire related config
 spire_rootdir="/var/lib/spire"
+
+# Get metadata from the spire server
+ret=$(curl -s -k -o /tmp/spire_bundle -w "%{http_code}" "${mdserver_endpoint}/meta-data")
+if [[ $ret == "200" ]]; then
+  spire_domain=$(jq -Mcr '.Global.spire.trustdomain' < /tmp/spire_bundle)
+  spire_server=$(jq -Mcr '.Global.spire.fqdn' < /tmp/spire_bundle)
+  # Insert root certificate into bundle.crt
+  jq -Mcr '.Global."ca-certs".trusted[0]' > ${spire_rootdir}/bundle/bundle.crt < /tmp/spire_bundle
+else
+  warn "Unable to retrieve metadata from server"
+  return 1
+fi
+rm -f /tmp/spire_bundle
 
 waitforspire() {
   RETRY=0
@@ -18,29 +32,23 @@ waitforspire() {
   done
 }
 
-
-info "Start cray-spire-finished"
-
-flag=/tmp/spire-message # flag for printing pass message only once
-if [[ ! -f $flag ]]; then
-  echo unknown > $flag
-fi
-
-# prevent starting again if the agent is already running
-if [[ -S ${spire_rootdir}/agent.sock ]]; then
-  info "Spire agent is running"
-  # check that the spire agent is responding
+spirehealth() {
   spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock
   r=$?
   if [[ $r -ne 0 ]]; then
     warn "Spire-agent healthcheck failed, return code $r"
-    echo fail > $flag
   else
-    if [[ $(< $flag) != pass ]]; then
-      info "Spire-agent healthcheck passed"
-      echo pass > $flag
-    fi
+    info "Spire-agent healthcheck passed"
   fi
+  return $r
+}
+
+info "Start cray-spire-finished"
+
+# prevent starting again if the agent is already running
+if [[ -S ${spire_rootdir}/agent.sock ]]; then
+  info "Spire agent is running"
+  r=$(spirehealth)
   return $r
 fi
 
@@ -52,6 +60,38 @@ if [[ -n $join_token ]]; then
     mkdir ${spire_rootdir}/data
   fi
 
+  # Setup the spire config
+  cat << EOF > ${spire_rootdir}/conf/spire-agent.conf
+agent {
+  data_dir = "${spire_rootdir}"
+  log_level = "INFO"
+  server_address = "${spire_server}"
+  server_port = "8081"
+  socket_path = "${spire_rootdir}/agent.sock"
+  trust_bundle_path = "${spire_rootdir}/bundle/bundle.crt"
+  trust_domain = "${spire_domain}"
+  join_token = "\$join_token"
+}
+
+plugins {
+  NodeAttestor "join_token" {
+    plugin_data {}
+  }
+
+  KeyManager "disk" {
+    plugin_data {
+      directory = "${spire_rootdir}/data"
+    }
+  }
+
+  WorkloadAttestor "unix" {
+    plugin_data {
+      discover_workload_path = true
+    }
+  }
+}
+EOF
+
   # run chronyd for one time sync before starting spire-agent
   /usr/sbin/chronyd -q
   r=$?
@@ -61,41 +101,67 @@ if [[ -n $join_token ]]; then
     warn "Chronyd failed to sync time before starting Spire-agent $r"
   fi
 
+  # Start the spire agent
   /usr/bin/spire-agent run -expandEnv \
     -config ${spire_rootdir}/conf/spire-agent.conf &
 
+  # Wait for spire agent to start and check for spire health
   waitforspire
-  if spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock; then
-    if [[ $(< $flag) != pass ]]; then
-      info "Spire-agent healthcheck passed"
-      echo pass > $flag
-    else
-      warn "Spire-agent healthcheck failed, return code $r"
-      echo fail > $flag
-    fi
-  fi
+  spirehealth
 
 elif [ "$tpm" = "enable" ]; then
   # run chronyd for one time sync before starting spire-agent
   if ! /usr/sbin/chronyd -q; then
     # Warning only for chronyd failure, since clock might be okay, try
     # running spire-agent.
-    warn "Chronyd failed to sync time before starting Spire-agent $r"
+    warn "Chronyd failed to sync time before starting Spire-agent"
   fi
 
+  # Setup the spire config
+  mkdir /var/lib/tpm-provisioner
+  /usr/bin/tpm-blob-retrieve
+  warn "Retrieved tpm blob: $(ls /var/lib/tpm-provisioner)"
+  cat << EOF > ${spire_rootdir}/conf/spire-agent.conf
+agent {
+  data_dir = "${spire_rootdir}"
+  log_level = "INFO"
+  server_address = "${spire_server}"
+  server_port = "8081"
+  socket_path = "${spire_rootdir}/agent.sock"
+  trust_bundle_path = "${spire_rootdir}/bundle/bundle.crt"
+  trust_domain = "${spire_domain}"
+}
+
+plugins {
+  NodeAttestor "tpm_devid" {
+    plugin_data {
+      devid_cert_path = "/var/lib/tpm-provisioner/devid.crt.pem"
+      devid_priv_path = "/var/lib/tpm-provisioner/devid.priv.blob"
+      devid_pub_path = "/var/lib/tpm-provisioner/devid.pub.blob"
+    }
+  }
+
+  KeyManager "disk" {
+    plugin_data {
+      directory = "${spire_rootdir}/data"
+    }
+  }
+
+  WorkloadAttestor "unix" {
+    plugin_data {
+      discover_workload_path = true
+    }
+  }
+}
+EOF
+
+  # Start the spire agent
   /usr/bin/spire-agent run -expandEnv \
     -config ${spire_rootdir}/conf/spire-agent.conf &
 
+  # Wait for spire agent to start and check for health
   waitforspire
-  if spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock; then
-    if [[ $(< $flag) != pass ]]; then
-      info "Spire-agent healthcheck passed"
-      echo pass > $flag
-    else
-      warn "Spire-agent healthcheck failed, return code $r"
-      echo fail > $flag
-    fi
-  fi
+  spirehealth
 else
   warn "join_token and tpm enable are not set"
 fi
@@ -109,20 +175,7 @@ if [ "$tpm" = "enroll" ]; then
 
   killall spire-agent
 
-  # Set spire home
-  spire_rootdir="/var/lib/spire"
-
-  ret=$(curl -s -k -o /tmp/spire_bundle -w "%{http_code}" "${mdserver_endpoint}/meta-data")
-  if [[ $ret == "200" ]]; then
-    spire_domain=$(jq -Mcr '.Global.spire.trustdomain' < /tmp/spire_bundle)
-    spire_server=$(jq -Mcr '.Global.spire.fqdn' < /tmp/spire_bundle)
-    # Insert root certificate into bundle.crt
-    jq -Mcr '.Global."ca-certs".trusted[0]' > ${spire_rootdir}/bundle/bundle.crt < /tmp/spire_bundle
-  else
-    warn "Unable to retrieve metadata from server"
-    return 1
-  fi
-
+  # Setup the spire-agent config
   cat << EOF > ${spire_rootdir}/conf/spire-agent.conf
 agent {
   data_dir = "${spire_rootdir}"
@@ -157,22 +210,13 @@ plugins {
 }
 EOF
 
+  # Start the spire agent
   /usr/bin/spire-agent run -expandEnv \
     -config ${spire_rootdir}/conf/spire-agent.conf &
 
+  # Wait for spire agent to start and check for health
   waitforspire
-  if spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock; then
-    if [[ $r -ne 0 ]]; then
-      if [[ $(< $flag) != pass ]]; then
-        info "Spire-agent healthcheck passed"
-        echo pass > $flag
-      fi
-    else
-      warn "Spire-agent healthcheck failed, return code $r"
-      echo fail > $flag
-    fi
-  fi
+  spirehealth
 fi
 
 info "End cray-spire-finished"
-return $r
