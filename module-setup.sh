@@ -26,7 +26,8 @@ install() {
   inst /etc/tpm-provisioner/blobs.conf
   inst /etc/tpm-provisioner/client.conf
   inst /opt/cray/cray-spire/tpm-provisioner-client
-  inst /var/lib/tpm-provisioner/*
+  inst mkdir
+  mkdir -m 0755 -p /var/lib/tpm-provisioner/
   inst /usr/bin/curl
   inst /usr/bin/jq
   inst /usr/bin/killall
