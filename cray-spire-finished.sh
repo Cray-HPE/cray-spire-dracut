@@ -23,9 +23,9 @@ waitforspire() {
   until spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock; do
     if [[ $RETRY -lt $MAX_RETRIES ]]; then
       RETRY="$((RETRY + 1))"
-      echo "spire-agent is not ready. Will retry after $RETRY_SECONDS seconds. ($RETRY/$MAX_RETRIES)"
+      warn "spire-agent is not ready. Will retry after $RETRY_SECONDS seconds. ($RETRY/$MAX_RETRIES)"
     else
-      echo "spire-agent did not start after $(echo "$RETRY_SECONDS" \* "$MAX_RETRIES" | bc) seconds."
+      error "spire-agent did not start after $(echo "$RETRY_SECONDS" \* "$MAX_RETRIES" | bc) seconds."
       exit 1
     fi
     sleep "$RETRY_SECONDS"
@@ -120,7 +120,7 @@ elif [ "$tpm" = "enable" ]; then
   # Setup the spire config
   mkdir /var/lib/tpm-provisioner
   /usr/bin/tpm-blob-retrieve
-  warn "Retrieved tpm blob: $(ls /var/lib/tpm-provisioner)"
+  info "Retrieved tpm blob: $(ls /var/lib/tpm-provisioner)"
   cat << EOF > ${spire_rootdir}/conf/spire-agent.conf
 agent {
   data_dir = "${spire_rootdir}"
