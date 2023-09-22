@@ -1,7 +1,7 @@
 Name: cray-spire-dracut
 Vendor: Hewlett Packard Enterprise Company
 Version: %(echo $VERSION | sed 's/^v//')
-Release: 5
+Release: 1
 Source: %{name}-%{version}.tar.bz2
 BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
@@ -31,7 +31,6 @@ Requires: jq
 %{__mkdir_p} %{buildroot}%{dracut_modules}/95crayspire
 %{__mkdir_p} %{buildroot}%{spire_dracut_doc}
 %{__install} -m 0644 module-setup.sh parse-crayspire.sh cray-spire-finished.sh cray-spire-pre-pivot.sh cray-dump-spire-log.sh %{buildroot}%{dracut_modules}/95crayspire
-%{__install} -m 0644 parse-crayspire-mdserver.sh cray-spire-mdserver-finished.sh %{buildroot}%{dracut_modules}/95crayspire
 %{__install} -m 0644 README.md %{buildroot}%{spire_dracut_doc}
 
 %files
