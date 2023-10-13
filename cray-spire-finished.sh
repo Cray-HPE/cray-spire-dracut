@@ -37,10 +37,12 @@ spirehealth() {
   r=$?
   if [[ $r -ne 0 ]]; then
     warn "Spire-agent healthcheck failed, return code $r"
+    return 1
   else
     info "Spire-agent healthcheck passed"
+    return 0
   fi
-  return $r
+  return 1
 }
 
 info "Start cray-spire-finished"
@@ -48,8 +50,8 @@ info "Start cray-spire-finished"
 # prevent starting again if the agent is already running
 if [[ -S ${spire_rootdir}/agent.sock ]]; then
   info "Spire agent is running"
-  r=$(spirehealth)
-  return $r
+  spirehealth
+  return $?
 fi
 
 # $join_token will be set by parse-crayspire. It holds the join token.
