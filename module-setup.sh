@@ -28,7 +28,7 @@ install() {
   inst /usr/bin/jq
   inst /usr/bin/killall
   inst /usr/bin/sleep
-  inst /usr/bin/spire-agent
+  inst /opt/cray/cray-spire/spire-agent
   inst /usr/bin/tpm-blob-clear
   inst /usr/bin/tpm-blob-retrieve
   inst /usr/bin/tpm-blob-store
