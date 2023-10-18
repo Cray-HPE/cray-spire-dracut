@@ -2,6 +2,9 @@
 # Set the rootdir used for all spire related config
 spire_rootdir="/var/lib/spire"
 
+# Get the install arch to check for tpm compatablity
+ARCH=$(uname -m)
+
 # Get metadata from the spire server
 ret=$(curl -s -k -o /tmp/spire_bundle -w "%{http_code}" "${mdserver_endpoint}/meta-data")
 if [[ $ret == "200" ]]; then
@@ -20,7 +23,7 @@ waitforspire() {
   MAX_RETRIES=30
   RETRY_SECONDS=5
 
-  until spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock; do
+  until /opt/cray/cray-spire/spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock; do
     if [[ $RETRY -lt $MAX_RETRIES ]]; then
       RETRY="$((RETRY + 1))"
       warn "spire-agent is not ready. Will retry after $RETRY_SECONDS seconds. ($RETRY/$MAX_RETRIES)"
@@ -33,7 +36,7 @@ waitforspire() {
 }
 
 spirehealth() {
-  spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock
+  /opt/cray/cray-spire/spire-agent healthcheck -socketPath ${spire_rootdir}/agent.sock
   r=$?
   if [[ $r -ne 0 ]]; then
     warn "Spire-agent healthcheck failed, return code $r"
@@ -104,14 +107,14 @@ EOF
   fi
 
   # Start the spire agent
-  /usr/bin/spire-agent run -expandEnv \
+  /opt/cray/cray-spire/spire-agent run -expandEnv \
     -config ${spire_rootdir}/conf/spire-agent.conf &
 
   # Wait for spire agent to start and check for spire health
   waitforspire
   spirehealth
 
-elif [ "$tpm" = "enable" ]; then
+elif [ "$tpm" = "enable" && "$ARCH" = "x86_64" ]; then
   # run chronyd for one time sync before starting spire-agent
   if ! /usr/sbin/chronyd -q; then
     # Warning only for chronyd failure, since clock might be okay, try
@@ -158,17 +161,19 @@ plugins {
 EOF
 
   # Start the spire agent
-  /usr/bin/spire-agent run -expandEnv \
+  /opt/cray/cray-spire/spire-agent run -expandEnv \
     -config ${spire_rootdir}/conf/spire-agent.conf &
 
   # Wait for spire agent to start and check for health
   waitforspire
   spirehealth
+elif [ "$tpm" = "enable" && "$ARCH" != "x86_64" ]; then
+  warn "tpm enable is not supported for non x86_64 nodes"
 else
   warn "join_token and tpm enable are not set"
 fi
 
-if [ "$tpm" = "enroll" ]; then
+if [ "$tpm" = "enroll" && "$ARCH" = "x86_64" ]; then
   info "Enrolling TPM on Spire"
   mkdir /var/lib/tpm-provisioner
   /opt/cray/cray-spire/tpm-provisioner-client
@@ -213,7 +218,7 @@ plugins {
 EOF
 
   # Start the spire agent
-  /usr/bin/spire-agent run -expandEnv \
+  /opt/cray/cray-spire/spire-agent run -expandEnv \
     -config ${spire_rootdir}/conf/spire-agent.conf &
 
   # Wait for spire agent to start and check for health
