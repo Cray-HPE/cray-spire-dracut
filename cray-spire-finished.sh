@@ -114,7 +114,7 @@ EOF
   waitforspire
   spirehealth
 
-elif [ "$tpm" = "enable" && "$ARCH" = "x86_64" ]; then
+elif { [ "$tpm" = "enable" ] && [ "$ARCH" = "x86_64" ]; }; then
   # run chronyd for one time sync before starting spire-agent
   if ! /usr/sbin/chronyd -q; then
     # Warning only for chronyd failure, since clock might be okay, try
@@ -167,13 +167,13 @@ EOF
   # Wait for spire agent to start and check for health
   waitforspire
   spirehealth
-elif [ "$tpm" = "enable" && "$ARCH" != "x86_64" ]; then
+elif { [ "$tpm" = "enable" ] && [ "$ARCH" != "x86_64" ]; }; then
   warn "tpm enable is not supported for non x86_64 nodes"
 else
   warn "join_token and tpm enable are not set"
 fi
 
-if [ "$tpm" = "enroll" && "$ARCH" = "x86_64" ]; then
+if { [ "$tpm" = "enroll" ] && [ "$ARCH" = "x86_64" ]; }; then
   info "Enrolling TPM on Spire"
   mkdir /var/lib/tpm-provisioner
   /opt/cray/cray-spire/tpm-provisioner-client
