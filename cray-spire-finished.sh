@@ -69,7 +69,7 @@ if [[ -n $join_token ]]; then
   cat << EOF > ${spire_rootdir}/conf/spire-agent.conf
 agent {
   data_dir = "${spire_rootdir}"
-  log_level = "INFO"
+  log_level = "WARN"
   server_address = "${spire_server}"
   server_port = "8081"
   socket_path = "${spire_rootdir}/agent.sock"
@@ -129,7 +129,7 @@ elif { [ "$tpm" = "enable" ] && [ "$ARCH" = "x86_64" ]; }; then
   cat << EOF > ${spire_rootdir}/conf/spire-agent.conf
 agent {
   data_dir = "${spire_rootdir}"
-  log_level = "INFO"
+  log_level = "WARN"
   server_address = "${spire_server}"
   server_port = "8081"
   socket_path = "${spire_rootdir}/agent.sock"
@@ -186,7 +186,7 @@ if { [ "$tpm" = "enroll" ] && [ "$ARCH" = "x86_64" ]; }; then
   cat << EOF > ${spire_rootdir}/conf/spire-agent.conf
 agent {
   data_dir = "${spire_rootdir}"
-  log_level = "INFO"
+  log_level = "WARN"
   server_address = "${spire_server}"
   server_port = "8081"
   socket_path = "${spire_rootdir}/agent.sock"
