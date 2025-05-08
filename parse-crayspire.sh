@@ -8,12 +8,14 @@ if [ "$(getarg tpm=)" = "enable" ]; then
   tpm=enable
   export tpm
   warn "TPM is set to Enable"
+  mkdir -p /etc/cray
   getarg xname= > /etc/cray/xname
 else
   if [ "$(getarg tpm=)" = "enroll" ]; then
     tpm=enroll
     export tpm
     warn "TPM is set to Enroll"
+    mkdir -p /etc/cray
     getarg xname= > /etc/cray/xname
   fi
 
